@@ -2,7 +2,7 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -20,6 +20,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # 🔥 AJOUT IMPORTANT
+      - name: Run tests with coverage
+        run: npm test -- --coverage
+
       - name: Run ESLint
         run: npx eslint .
 
@@ -27,3 +31,4 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
