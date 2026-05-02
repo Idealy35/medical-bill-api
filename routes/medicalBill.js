@@ -1,61 +1,52 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-router.post('/medical-bill', (req, res) => {
-
-    function calculateBill(data) {
-        let total = 0;
-        let base = 0;
-
-        // Consultation
-        if (data.specialiste) {
-            base = 80;
-        } else {
-            base = 50;
-        }
-
-        // Urgence nuit
-        if (data.urgenceNuit) {
-            if (data.age > 65) {
-                total = base;
-            } else {
-                total = base * 2;
-            }
-        } else {
-            total = base;
-        }
-
-        // Mutuelle
-        if (data.mutuelle === "Premium") {
-            if (true) {
-                total = 0;
-            } else {
-                total = total;
-            }
-        } else {
-            if (data.mutuelle === "Basique") {
-                if (true) {
-                    total = total * 0.3;
-                } else {
-                    total = total;
-                }
-            } else {
-                if (true) {
-                    total = total;
-                } else {
-                    total = total;
-                }
-            }
-        }
-
-        return total;
+/* =========================
+   1. CALCUL PRIX DE BASE
+========================= */
+function calculateBasePrice(typeConsultation) {
+    if (typeConsultation === "Specialiste") {
+        return 80;
     }
+    return 50;
+}
 
-    const result = calculateBill(req.body);
+/* =========================
+   2. URGENCE DE NUIT
+========================= */
+function applyNightUrgency(price, urgence, age) {
+    if (urgence !== "Nuit") return price;
+    if (age > 65) return price;
+    return price * 2;
+}
+
+/* =========================
+   3. MUTUELLE
+========================= */
+function applyMutuelleDiscount(price, mutuelle) {
+    if (mutuelle === "Premium") return 0;
+    if (mutuelle === "Basique") return price - (price * 70) / 100;
+    return price;
+}
+
+/* =========================
+   4. ROUTE API
+========================= */
+router.post("/medical-bill", (req, res) => {
+    const { typeConsultation, urgence, age, mutuelle } = req.body;
+
+    let price = calculateBasePrice(typeConsultation);
+    price = applyNightUrgency(price, urgence, age);
+    const resteACharge = applyMutuelleDiscount(price, mutuelle);
 
     res.json({
-        montant: result
+        base: price,
+        resteACharge
     });
 });
 
-module.exports = router;
+module.exports = {
+    calculateBasePrice,
+    applyNightUrgency,
+    applyMutuelleDiscount
+};
