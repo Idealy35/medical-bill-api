@@ -1,4 +1,5 @@
 const express = require("express");
+const { body, validationResult } = require("express-validator");
 const router = express.Router();
 
 /* =========================
@@ -32,27 +33,37 @@ function applyMutuelleDiscount(price, mutuelle) {
 /* =========================
    4. ROUTE API
 ========================= */
-router.post("/medical-bill", (req, res) => {
-    try {
-        const { typeConsultation, urgence, age, mutuelle } = req.body;
-
-        // Validation simple des entrées pour la sécurité
-        if (!typeConsultation || typeof age !== 'number') {
-            return res.status(400).json({ error: "Données invalides" });
+router.post(
+    "/medical-bill",
+    // Validation robuste avec express-validator pour la sécurité (Rating A)
+    [
+        body("typeConsultation").isString().notEmpty().trim().escape(),
+        body("age").isNumeric().isInt({ min: 0, max: 120 }),
+        body("urgence").optional().isString().trim().escape(),
+        body("mutuelle").optional().isString().trim().escape()
+    ],
+    (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        let price = calculateBasePrice(typeConsultation);
-        price = applyNightUrgency(price, urgence, age);
-        const resteACharge = applyMutuelleDiscount(price, mutuelle);
+        try {
+            const { typeConsultation, urgence, age, mutuelle } = req.body;
 
-        res.json({
-            base: price,
-            resteACharge
-        });
-    } catch (error) {
-        res.status(500).json({ error: "Erreur serveur" });
+            let price = calculateBasePrice(typeConsultation);
+            price = applyNightUrgency(price, urgence, age);
+            const resteACharge = applyMutuelleDiscount(price, mutuelle);
+
+            res.json({
+                base: price,
+                resteACharge
+            });
+        } catch (err) {
+            res.status(500).json({ error: "Erreur serveur" });
+        }
     }
-});
+);
 
 module.exports = {
     router,

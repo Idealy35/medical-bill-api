@@ -1,3 +1,5 @@
+
+
 const request = require("supertest");
 const app = require("../server");
 const {
@@ -75,7 +77,8 @@ describe("API Route Integration Tests", () => {
             });
         
         expect(response.status).toBe(400);
-        expect(response.body.error).toBe("Données invalides");
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors[0].path).toBe("age");
     });
 
     test("POST /api/medical-bill - General with no urgency", async () => {
@@ -94,9 +97,23 @@ describe("API Route Integration Tests", () => {
     });
 
     test("POST /api/medical-bill - Server Error Simulation", async () => {
-        // simulation d'une erreur en envoyant un body qui n'est pas un objet si possible
-        // ou simplement vérifier que le code de gestion d'erreur existe
-        expect(true).toBe(true);
+        // On mock calculateBasePrice pour qu'il jette une erreur et couvre le bloc catch
+        const medicalBill = require("../routes/medicalBill");
+        const spy = jest.spyOn(medicalBill, 'calculateBasePrice').mockImplementation(() => {
+            throw new Error("Simulated Error");
+        });
+
+        const response = await request(app)
+            .post("/api/medical-bill")
+            .send({
+                typeConsultation: "Specialiste",
+                age: 30
+            });
+        
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe("Erreur serveur");
+        
+        spy.mockRestore();
     });
 
     test("CORS Policy - Blocked Origin", async () => {
@@ -107,8 +124,8 @@ describe("API Route Integration Tests", () => {
                 typeConsultation: "General",
                 age: 30
             });
-        // Express-cors renvoie souvent 200 ou 204 mais sans les headers Access-Control-Allow-Origin
-        // ou une erreur selon la config. Ici on vérifie le comportement.
+        
+        // Avec une liste statique, cors renvoie l'origin seulement s'il est autorisé
         expect(response.headers['access-control-allow-origin']).toBeUndefined();
     });
 
@@ -121,5 +138,17 @@ describe("API Route Integration Tests", () => {
                 age: 30
             });
         expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+    });
+
+    test("Rate Limiting - Should allow multiple requests", async () => {
+        // Test basique pour s'assurer que le middleware n'empêche pas le fonctionnement
+        const response = await request(app)
+            .post("/api/medical-bill")
+            .send({
+                typeConsultation: "General",
+                age: 30
+            });
+        expect(response.status).toBe(200);
+        expect(response.headers['x-ratelimit-limit']).toBeDefined();
     });
 });
