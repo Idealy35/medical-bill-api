@@ -33,16 +33,25 @@ function applyMutuelleDiscount(price, mutuelle) {
    4. ROUTE API
 ========================= */
 router.post("/medical-bill", (req, res) => {
-    const { typeConsultation, urgence, age, mutuelle } = req.body;
+    try {
+        const { typeConsultation, urgence, age, mutuelle } = req.body;
 
-    let price = calculateBasePrice(typeConsultation);
-    price = applyNightUrgency(price, urgence, age);
-    const resteACharge = applyMutuelleDiscount(price, mutuelle);
+        // Validation simple des entrées pour la sécurité
+        if (!typeConsultation || typeof age !== 'number') {
+            return res.status(400).json({ error: "Données invalides" });
+        }
 
-    res.json({
-        base: price,
-        resteACharge
-    });
+        let price = calculateBasePrice(typeConsultation);
+        price = applyNightUrgency(price, urgence, age);
+        const resteACharge = applyMutuelleDiscount(price, mutuelle);
+
+        res.json({
+            base: price,
+            resteACharge
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
 });
 
 module.exports = {
