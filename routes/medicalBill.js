@@ -46,6 +46,7 @@ router.post("/medical-bill", (req, res) => {
 });
 
 module.exports = {
+    router,
     calculateBasePrice,
     applyNightUrgency,
     applyMutuelleDiscount

@@ -1,8 +1,11 @@
 const express = require('express');
+const helmet = require('helmet');
 const app = express();
 
-const medicalBillRoute = require('./routes/medicalBill');
+const { router: medicalBillRoute } = require('./routes/medicalBill');
 
+app.use(helmet());
+app.disable('x-powered-by');
 app.use(express.json());
 app.use('/api', medicalBillRoute);
 
