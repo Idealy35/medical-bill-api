@@ -7,8 +7,17 @@ const app = express();
 const { router: medicalBillRoute } = require('./routes/medicalBill');
 
 // Sécurité : Configuration de CORS
+const allowedOrigins = ['http://localhost:3000', 'https://votre-domaine-production.com'];
 app.use(cors({
-    origin: '*', // À restreindre en production pour plus de sécurité
+    origin: function (origin, callback) {
+        // autorise les requêtes sans origine (comme les outils mobiles ou curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'La politique CORS pour ce site ne permet pas l\'accès depuis l\'origine spécifiée.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
     methods: ['POST']
 }));
 
