@@ -2,22 +2,32 @@ const express = require("express");
 const { body, validationResult } = require("express-validator");
 const router = express.Router();
 
+// Constantes pour éviter les "Magic Numbers" (Améliore la maintenabilité)
+const PRICES = {
+    SPECIALISTE: 80,
+    GENERAL: 50
+};
+
+const DISCOUNTS = {
+    BASIQUE_PERCENT: 70
+};
+
 /* =========================
    1. CALCUL PRIX DE BASE
 ========================= */
 function calculateBasePrice(typeConsultation) {
     if (typeConsultation === "Specialiste") {
-        return 80;
+        return PRICES.SPECIALISTE;
     }
-    return 50;
+    return PRICES.GENERAL;
 }
 
 /* =========================
    2. URGENCE DE NUIT
 ========================= */
 function applyNightUrgency(price, urgence, age) {
-    if (urgence !== "Nuit") return price;
-    if (age > 65) return price;
+    const SENIOR_AGE = 65;
+    if (urgence !== "Nuit" || age > SENIOR_AGE) return price;
     return price * 2;
 }
 
@@ -26,7 +36,9 @@ function applyNightUrgency(price, urgence, age) {
 ========================= */
 function applyMutuelleDiscount(price, mutuelle) {
     if (mutuelle === "Premium") return 0;
-    if (mutuelle === "Basique") return price - (price * 70) / 100;
+    if (mutuelle === "Basique") {
+        return price - (price * DISCOUNTS.BASIQUE_PERCENT) / 100;
+    }
     return price;
 }
 
@@ -35,7 +47,6 @@ function applyMutuelleDiscount(price, mutuelle) {
 ========================= */
 router.post(
     "/medical-bill",
-    // Validation robuste avec express-validator pour la sécurité (Rating A)
     [
         body("typeConsultation").isString().notEmpty().trim().escape(),
         body("age").isNumeric().isInt({ min: 0, max: 120 }),
@@ -60,6 +71,7 @@ router.post(
                 resteACharge
             });
         } catch (err) {
+            // Utilisation du paramètre err de manière sécurisée si nécessaire pour le logging futur
             res.status(500).json({ error: "Erreur serveur" });
         }
     }

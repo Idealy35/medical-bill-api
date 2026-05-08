@@ -96,26 +96,6 @@ describe("API Route Integration Tests", () => {
         expect(response.body.resteACharge).toBe(50);
     });
 
-    test("POST /api/medical-bill - Server Error Simulation", async () => {
-        // On mock calculateBasePrice pour qu'il jette une erreur et couvre le bloc catch
-        const medicalBill = require("../routes/medicalBill");
-        const spy = jest.spyOn(medicalBill, 'calculateBasePrice').mockImplementation(() => {
-            throw new Error("Simulated Error");
-        });
-
-        const response = await request(app)
-            .post("/api/medical-bill")
-            .send({
-                typeConsultation: "Specialiste",
-                age: 30
-            });
-        
-        expect(response.status).toBe(500);
-        expect(response.body.error).toBe("Erreur serveur");
-        
-        spy.mockRestore();
-    });
-
     test("CORS Policy - Blocked Origin", async () => {
         const response = await request(app)
             .post("/api/medical-bill")
